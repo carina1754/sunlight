@@ -8,57 +8,32 @@ import math
 import warnings
 warnings.filterwarnings("ignore")
 train = pd.read_csv('/Users/jungsuuann/Downloads/data/train/train.csv')
-
 submission = pd.read_csv('/Users/jungsuuann/Downloads/data/sample_submission.csv')
 
-def create_lag_feats(data, lags, cols):
-    
-    lag_cols = []
-    temp = data.copy()
-    for col in cols:
-        for lag in lags:
-            temp[col + '_lag_%s'%lag] = temp[col].shift(lag)
-            temp['Target1'] = temp['TARGET']
-            temp['Target2'] = temp['TARGET'].shift(-48).fillna(method='ffill')  
-            lag_cols.append(col + '_lag_%s'%lag)
-
-    return temp, lag_cols
-    
-
 def preprocess_data(data, is_train=True):
-    
     temp = data.copy()
-    temp = temp[['Hour', 'TARGET', 'DHI', 'DNI', 'WS', 'RH', 'T']]
-    temp = data.assign(GHI=lambda x:x['DHI']+x['DNI']*np.tan((180*(x['Hour']+1)/24)-90))
-    if is_train==True:          
-    
+    temp = temp[['Hour', 'TARGET','DHI','DNI','WS', 'RH', 'T']]
+    temp = temp.assign(GHI=lambda x: x['DHI'] + x['DNI'] * np.cos(((180 * (x['Hour']+1) / 24) - 90)/180*np.pi))
+    if is_train==True:
         temp['Target1'] = temp['TARGET'].shift(-48).fillna(method='ffill')
         temp['Target2'] = temp['TARGET'].shift(-48*2).fillna(method='ffill')
-        temp = temp.dropna()
-        
         return temp.iloc[:-96]
 
-    elif is_train==False:
-        
+    elif is_train==False:  
         return temp.iloc[-48:, :]
 
-
 df_train = preprocess_data(train)
-
 print(df_train[:48])
-
-df_test = []
+test = []
 
 for i in range(81):
     file_path = '/Users/jungsuuann/Downloads/data/test/' + str(i) + '.csv'
     temp = pd.read_csv(file_path)
     temp = preprocess_data(temp, is_train=False).iloc[-48:]
-    df_test.append(temp)
+    test.append(temp)
 
-X_test = pd.concat(df_test)
-
+X_test = pd.concat(test)
 print(X_test[:48])
-
 
 from sklearn.model_selection import train_test_split
 X_train_1, X_valid_1, Y_train_1, Y_valid_1 = train_test_split(df_train.iloc[:, :-2], df_train.iloc[:, -2], test_size=0.3, random_state=0)
@@ -77,7 +52,7 @@ def LGBM(q, X_train, Y_train, X_valid, Y_valid, X_test):
                          
                          
     model.fit(X_train, Y_train, eval_metric = ['quantile'], 
-          eval_set=[(X_valid, Y_valid)], early_stopping_rounds=600,verbose=1000)
+          eval_set=[(X_valid, Y_valid)], early_stopping_rounds=300,verbose=500)
 
     # (b) Predictions
     pred = pd.Series(model.predict(X_test).round(2))
@@ -104,4 +79,4 @@ models_2, results_2 = train_data(X_train_2, Y_train_2, X_valid_2, Y_valid_2, X_t
 submission.loc[submission.id.str.contains("Day7"), "q_0.1":] = results_1.sort_index().values
 submission.loc[submission.id.str.contains("Day8"), "q_0.1":] = results_2.sort_index().values
 
-submission.to_csv('/Users/jungsuuann/Downloads/data/submission_v1.csv', index=False)
+submission.to_csv('/Users/jungsuuann/Downloads/data/submission.csv', index=False)
