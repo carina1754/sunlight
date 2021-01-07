@@ -7,13 +7,17 @@ import math
 
 import warnings
 warnings.filterwarnings("ignore")
-train = pd.read_csv('/Users/jungsuuann/Downloads/data/train/train.csv')
-submission = pd.read_csv('/Users/jungsuuann/Downloads/data/sample_submission.csv')
+train = pd.read_csv('./data/train/train.csv')
+submission = pd.read_csv('./data/sample_submission.csv')
 
 def preprocess_data(data, is_train=True):
+    
     temp = data.copy()
-    temp = temp[['Hour', 'TARGET','WS', 'RH', 'T']]
-    temp = data.assign(GHI=lambda x: x['DHI'] + x['DNI'] * np.cos(((180 * (x['Hour']+1) / 24) - 90)/180*np.pi))
+    temp = temp[['Hour', 'TARGET', 'DHI','DNI','WS', 'RH', 'T']]
+    temp = temp.assign(GHI=lambda x: x['DHI'] + x['DNI'] * np.cos(((180 * (x['Hour']+1) / 24) - 90)/180*np.pi))
+    #temp = temp.assign(WP=lambda y: 742.9 + 176.5*y['T'] + 3.562*y['WS']- 13.14*y['T']*y['T'] - 0.7466*y['T']*y['WS']-0.151*y['WS']*y['WS'])
+    temp = temp[['Hour', 'TARGET','GHI','WS', 'RH', 'T']]
+    
     if is_train==True:
         temp['Target1'] = temp['TARGET'].shift(-48).fillna(method='ffill')
         temp['Target2'] = temp['TARGET'].shift(-48*2).fillna(method='ffill')
@@ -27,7 +31,7 @@ print(df_train[:48])
 test = []
 
 for i in range(81):
-    file_path = '/Users/jungsuuann/Downloads/data/test/' + str(i) + '.csv'
+    file_path = './data/test/' + str(i) + '.csv'
     temp = pd.read_csv(file_path)
     temp = preprocess_data(temp, is_train=False).iloc[-48:]
     test.append(temp)
@@ -58,7 +62,6 @@ def LGBM(q, X_train, Y_train, X_valid, Y_valid, X_test):
     # (a) Modeling  
     model = LGBMRegressor(alpha=q, bagging_fraction=0.7, subsample=0.7,**params)                   
                          
-                         
     model.fit(X_train, Y_train, eval_metric = ['quantile'], 
           eval_set=[(X_valid, Y_valid)], early_stopping_rounds=300,verbose=500)
 
@@ -87,4 +90,4 @@ models_2, results_2 = train_data(X_train_2, Y_train_2, X_valid_2, Y_valid_2, X_t
 submission.loc[submission.id.str.contains("Day7"), "q_0.1":] = results_1.sort_index().values
 submission.loc[submission.id.str.contains("Day8"), "q_0.1":] = results_2.sort_index().values
 
-submission.to_csv('/Users/jungsuuann/Downloads/data/submission.csv', index=False)
+submission.to_csv('./data/submission.csv', index=False)
