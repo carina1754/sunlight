@@ -12,8 +12,8 @@ submission = pd.read_csv('/Users/jungsuuann/Downloads/data/sample_submission.csv
 
 def preprocess_data(data, is_train=True):
     temp = data.copy()
-    temp = temp[['Hour', 'TARGET','DHI','DNI','WS', 'RH', 'T']]
-    temp = temp.assign(GHI=lambda x: x['DHI'] + x['DNI'] * np.cos(((180 * (x['Hour']+1) / 24) - 90)/180*np.pi))
+    temp = temp[['Hour', 'TARGET','WS', 'RH', 'T']]
+    temp = data.assign(GHI=lambda x: x['DHI'] + x['DNI'] * np.cos(((180 * (x['Hour']+1) / 24) - 90)/180*np.pi))
     if is_train==True:
         temp['Target1'] = temp['TARGET'].shift(-48).fillna(method='ffill')
         temp['Target2'] = temp['TARGET'].shift(-48*2).fillna(method='ffill')
@@ -43,12 +43,20 @@ quantiles = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
 from lightgbm import LGBMRegressor
 
+params = {
+    'objective': 'quantile',
+    'metric': 'quantile',
+    #'max_depth': 4,
+    #'num_leaves': 15,
+    'learning_rate': 0.027,
+    'n_estimators': 10000,
+    'boosting_type': 'gbdt'
+}
+
 # Get the model and the predictions in (a) - (b)
 def LGBM(q, X_train, Y_train, X_valid, Y_valid, X_test):
-    
     # (a) Modeling  
-    model = LGBMRegressor(objective='quantile', alpha=q,
-                         n_estimators=10000, bagging_fraction=0.7, learning_rate=0.027, subsample=0.7)                   
+    model = LGBMRegressor(alpha=q, bagging_fraction=0.7, subsample=0.7,**params)                   
                          
                          
     model.fit(X_train, Y_train, eval_metric = ['quantile'], 
