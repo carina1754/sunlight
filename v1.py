@@ -15,8 +15,8 @@ def preprocess_data(data, is_train=True):
     temp = data.copy()
     temp = temp[['Hour', 'TARGET', 'DHI','DNI','WS', 'RH', 'T']]
     temp = temp.assign(GHI=lambda x: x['DHI'] + x['DNI'] * np.cos(((180 * (x['Hour']+1) / 24) - 90)/180*np.pi))
-    #temp = temp.assign(WP=lambda y: 742.9 + 176.5*y['T'] + 3.562*y['WS']- 13.14*y['T']*y['T'] - 0.7466*y['T']*y['WS']-0.151*y['WS']*y['WS'])
-    temp = temp[['Hour', 'TARGET','GHI','WS', 'RH', 'T']]
+    temp = temp.assign(WP=lambda y: y['TARGET']*(0.7284+ 0.003492*y['T'] + 0.1731*y['WS']- 0.000148*y['T']*y['T'] - 0.0007319*y['T']*y['WS']-0.01289*y['WS']*y['WS']))
+    temp = temp[['Hour', 'TARGET','GHI','WP','RH','T','WS']]
     
     if is_train==True:
         temp['Target1'] = temp['TARGET'].shift(-48).fillna(method='ffill')
@@ -63,7 +63,7 @@ def LGBM(q, X_train, Y_train, X_valid, Y_valid, X_test):
     model = LGBMRegressor(alpha=q, bagging_fraction=0.7, subsample=0.7,**params)                   
                          
     model.fit(X_train, Y_train, eval_metric = ['quantile'], 
-          eval_set=[(X_valid, Y_valid)], early_stopping_rounds=300,verbose=500)
+          eval_set=[(X_valid, Y_valid)], early_stopping_rounds=400,verbose=600)
 
     # (b) Predictions
     pred = pd.Series(model.predict(X_test).round(2))
