@@ -15,8 +15,8 @@ def preprocess_data(data, is_train=True):
     temp = data.copy()
     temp = temp[['Hour', 'TARGET', 'DHI','DNI','WS', 'RH', 'T']]
     temp = temp.assign(GHI=lambda x: x['DHI'] + x['DNI'] * np.cos(((180 * (x['Hour']+1) / 24) - 90)/180*np.pi))
-    temp = temp.assign(WP=lambda y: y['TARGET']*(0.7284+ 0.003492*y['T'] + 0.1731*y['WS']- 0.000148*y['T']*y['T'] - 0.0007319*y['T']*y['WS']-0.01289*y['WS']*y['WS']))
-    temp = temp[['Hour', 'TARGET','GHI','WP','RH','T','WS']]
+    temp = temp.assign(WP=lambda y: (0.7284+ 0.003492*y['T'] + 0.1731*y['WS']- 0.000148*y['T']*y['T'] - 0.0007319*y['T']*y['WS']-0.01289*y['WS']*y['WS']))
+    temp = temp[['Hour', 'TARGET','GHI','DHI','DNI','RH','T','WS','WP']]
     
     if is_train==True:
         temp['Target1'] = temp['TARGET'].shift(-48).fillna(method='ffill')
@@ -27,7 +27,6 @@ def preprocess_data(data, is_train=True):
         return temp.iloc[-48:, :]
 
 df_train = preprocess_data(train)
-print(df_train[:48])
 test = []
 
 for i in range(81):
@@ -37,7 +36,6 @@ for i in range(81):
     test.append(temp)
 
 X_test = pd.concat(test)
-print(X_test[:48])
 
 from sklearn.model_selection import train_test_split
 X_train_1, X_valid_1, Y_train_1, Y_valid_1 = train_test_split(df_train.iloc[:, :-2], df_train.iloc[:, -2], test_size=0.3, random_state=0)
@@ -50,11 +48,13 @@ from lightgbm import LGBMRegressor
 params = {
     'objective': 'quantile',
     'metric': 'quantile',
-    #'max_depth': 4,
-    #'num_leaves': 15,
-    'learning_rate': 0.027,
+    #'max_depth': -1,
+    #'num_leaves': 144,
+    #'num_iterations' : 1000,
+    'learning_rate': 0.01,
     'n_estimators': 10000,
-    'boosting_type': 'gbdt'
+    #'min_data_in_leaf':600,
+    'boosting_type': 'dart'
 }
 
 # Get the model and the predictions in (a) - (b)
@@ -63,7 +63,7 @@ def LGBM(q, X_train, Y_train, X_valid, Y_valid, X_test):
     model = LGBMRegressor(alpha=q, bagging_fraction=0.7, subsample=0.7,**params)                   
                          
     model.fit(X_train, Y_train, eval_metric = ['quantile'], 
-          eval_set=[(X_valid, Y_valid)], early_stopping_rounds=400,verbose=600)
+          eval_set=[(X_valid, Y_valid)], early_stopping_rounds=300,verbose=300)
 
     # (b) Predictions
     pred = pd.Series(model.predict(X_test).round(2))
