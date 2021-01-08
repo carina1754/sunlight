@@ -13,9 +13,8 @@ submission = pd.read_csv('./data/sample_submission.csv')
 def preprocess_data(data, is_train=True):
     
     temp = data.copy()
-    temp = temp[['Hour', 'TARGET', 'DHI','DNI','WS', 'RH', 'T']]
-    temp = temp.assign(GHI=lambda x: x['DHI'] + x['DNI'] * np.cos(((180 * (x['Hour']+1) / 24) - 90)/180*np.pi))
-    temp = temp.assign(WP=lambda y: (0.7284+ 0.003492*y['T'] + 0.1731*y['WS']- 0.000148*y['T']*y['T'] - 0.0007319*y['T']*y['WS']-0.01289*y['WS']*y['WS']))
+    temp = temp[['Hour', 'Minute','TARGET', 'DHI','DNI','WS', 'RH', 'T']]
+    temp = temp.assign(GHI=lambda x: x['DHI'] + x['DNI'] * np.cos(((180 * (x['Hour']+1+x['Minute']/60) / 24) - 90)/180*np.pi))
     temp = temp[['Hour', 'TARGET','GHI','DHI','DNI','RH','T','WS','WP']]
     
     if is_train==True:

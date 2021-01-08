@@ -93,18 +93,15 @@ k=0.01
 cost = tf.reduce_mean(tf.square(hypothesis - Y))
 # cost function 최소화
 #optimizer = tf.train.GradientDescentOptimizer(learning_rate=1e-5)
-optimizer = tf.train.GradientDescentOptimizer(learning_rate=k)
+optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.068)
 train = optimizer.minimize(cost)
 
 init = tf.global_variables_initializer()
 sess = tf.Session()
 sess.run(init)
-for i in range(100):
-      k=i/1000
-      if i>0:
-        for step in range(1001):
+for step in range(10001):
           cost_val, hy_val,_  = sess.run([cost, hypothesis, train], feed_dict={x1: x1_data, x2: x2_data, x3: x3_data, x4: x4_data, x5: x5_data, x6: x6_data, Y: y_data})
-          if step == 1000:
-            print(i," runing  ", step, "\nCost: ", cost_val, "\nPrediction:\n", hy_val)
+          if step % 100==0:
+            print(" runing  ", step, "\nCost: ", cost_val, "\nPrediction:\n", hy_val)
 
 print(sess.run(w1),sess.run(w2),sess.run(w3),sess.run(w4),sess.run(w5),sess.run(w6),sess.run(b))

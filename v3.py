@@ -1,65 +1,34 @@
-import pandas as pd
 import numpy as np
-train = pd.read_csv('/Users/jungsuuann/Downloads/data/train/train.csv')
-submission = pd.read_csv('/Users/jungsuuann/Downloads/data/sample_submission.csv')
-submission.set_index('id',inplace=True)
+#import tensorflow as tf
+import pandas as pd
+import matplotlib.pyplot as plt
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+from sklearn.preprocessing import MinMaxScaler
 
-def transform(dataset, target, start_index, end_index, history_size,
-                      target_size, step):
-    data = []
-    labels = []
-    start_index = start_index + history_size
-    if end_index is None:
-        end_index = len(dataset) - target_size
-    for i in range(start_index, end_index, 48):
-        indices = range(i-history_size, i, step)
-        data.append(np.ravel(dataset[indices].T))
-        labels.append(target[i:i+target_size])
-    data = np.array(data)
-    labels = np.array(labels)
-    return data, labels
+df = pd.read_csv('./data/train/train.csv')
+print(df.columns)
 
-x_col =['DHI','DNI','WS','RH','T','TARGET']
-y_col = ['TARGET']
+df['TARGET'].hist(bins=100)
+plt.show()
 
-dataset = train.loc[:,x_col].values
-label = np.ravel(train.loc[:,y_col].values)
+from sklearn import linear_model
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+from math import sqrt
 
-past_history = 48 * 7
-future_target = 48 * 2
+x = df[df.colums.difference(['TARGET',y])]
+y=df['y']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=19)
 
-### transform train
-train_data, train_label = transform(dataset, label, 0,None, past_history,future_target, 1)
-### transform test
-test = []
-for i in range(81):
-    data = []
-    tmp = pd.read_csv(f'/Users/jungsuuann/Downloads/data/test/{i}.csv')
-    tmp = tmp.loc[:, x_col].values
-    tmp = tmp[-past_history:,:]
-    data.append(np.ravel(tmp.T))
-    data = np.array(data)
-    test.append(data)
-test = np.concatenate(test, axis=0)
+# 회귀 분석 객체 생성(선형 회귀 모델 생성)
+lr = linear_model.LinearRegression()
 
-from sklearn import ensemble
-N_ESTIMATORS = 1000
-rf = ensemble.RandomForestRegressor(n_estimators=N_ESTIMATORS,
-                                    max_features=1, random_state=0,
-                                    max_depth = 5,
-                                    verbose=True,
-                                    n_jobs=-1)
-rf.fit(train_data, train_label)
+#fit()는 기울기와 절편을 전달하기 위함.
+model = lr.fit(X_train, y_train)
 
-rf_preds = []
-for estimator in rf.estimators_:
-    rf_preds.append(estimator.predict(test))
-rf_preds = np.array(rf_preds)
+# 학습된 계수를 출력합니다.
+print(lr.coef_)
 
-for i, q in enumerate(np.arange(0.1, 1, 0.1)):
-    y_pred = np.percentile(rf_preds, q * 100, axis=0)
-    submission.iloc[:, i] = np.ravel(y_pred)
-
-submission.to_csv(f'submission.csv')
-
-
+# 상수항을 출력합니다.
+print(lr.intercept_)
