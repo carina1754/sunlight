@@ -15,12 +15,12 @@ def preprocess_data(data, is_train=True):
     temp = data.copy()
     temp = temp[['Hour', 'Minute','TARGET', 'DHI','DNI','WS', 'RH', 'T']]
     temp = temp.assign(GHI=lambda x: x['DHI'] + x['DNI'] * np.cos(((180 * (x['Hour']+1+x['Minute']/60) / 24) - 90)/180*np.pi))
-    temp = temp[['Hour', 'TARGET','GHI','DHI','DNI','RH','T','WS','WP']]
+    temp = temp[['Hour', 'TARGET','GHI','DHI','DNI','RH','T','WS']]
     
     if is_train==True:
         temp['Target1'] = temp['TARGET'].shift(-48).fillna(method='ffill')
         temp['Target2'] = temp['TARGET'].shift(-48*2).fillna(method='ffill')
-        return temp.iloc[:-96]
+        return temp.iloc[:-96] 
 
     elif is_train==False:  
         return temp.iloc[-48:, :]
@@ -53,7 +53,7 @@ params = {
     'learning_rate': 0.01,
     'n_estimators': 10000,
     #'min_data_in_leaf':600,
-    'boosting_type': 'dart'
+    'boosting_type': 'gbdt'
 }
 
 # Get the model and the predictions in (a) - (b)
@@ -65,6 +65,7 @@ def LGBM(q, X_train, Y_train, X_valid, Y_valid, X_test):
           eval_set=[(X_valid, Y_valid)], early_stopping_rounds=300,verbose=300)
 
     # (b) Predictions
+    print (np.shape(model.predict(X_test)))
     pred = pd.Series(model.predict(X_test).round(2))
     return pred, model
 
