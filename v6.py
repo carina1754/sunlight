@@ -15,7 +15,7 @@ def preprocess_data(data, is_train=True):
     temp = data.copy()
     temp = temp[['Hour', 'Minute','TARGET', 'DHI','DNI','WS', 'RH', 'T']]
     temp = temp.assign(GHI=lambda x: x['DHI'] + x['DNI'] * np.cos(((180 * (x['Hour']+1+x['Minute']/60) / 24) - 90)/180*np.pi))
-    temp = temp[['Hour', 'TARGET','GHI','DHI','DNI','RH','T','WS']]
+    temp = temp[['Hour','TARGET','GHI','DHI','DNI','RH','T','WS']]
     
     if is_train==True:
         temp['Target1'] = temp['TARGET'].shift(-48).fillna(method='ffill')
@@ -54,17 +54,17 @@ from keras.models import Sequential
 from keras.layers import Dense
 
 def training(q, X_train, Y_train,X_valid,Y_valid, X_test):
-    model = Sequential()
-    model.add(Dense(10, activation='relu'))
-    model.add(Dense(10))
-    model.add(Dense(8))
-    model.add(Dense(1))
+    model = Sequential([
+    Dense(10, activation='relu'), 
+    Dense(10, activation='relu'),
+    Dense(5, activation='relu'),
+    Dense(1, activation='softmax')
+    ])
     
     # 3. 훈련
     model.compile(loss=lambda y,pred: quantile_loss(q,y,pred),optimizer='adam')
-    model.fit(X_train,Y_train, epochs=1,validation_data=(X_valid, Y_valid))
-    result = np.ravel(model.predict(X_test), order='F')
-    pred = pd.Series(result)
+    model.fit(X_train,Y_train, epochs=10,validation_data=(X_valid, Y_valid))
+    pred = pd.Series(np.ravel(model.predict(X_test), order='C'))
     return pred, model
 
 quantiles = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
