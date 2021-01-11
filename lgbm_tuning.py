@@ -45,7 +45,7 @@ quantiles = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 from lightgbm import LGBMRegressor
 
 gridParams = {
-    'learning_rate': [0.11,0.1,0.08],
+    'learning_rate': [0.11,0.1,0.07],
     'num_leaves': [1000],
     'boosting_type' : ['gbdt'],
     'objective' : ['quantile'],
@@ -53,18 +53,20 @@ gridParams = {
     'subsample' : [0.5],
     'min_split_gain' : [0.01,0.05,0.027],
     'metric':['quantile'],
+    'n_estimators': [10000],
     'scale_pos_weight' : [1]
     }
-
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler()
 
 # Get the model and the predictions in (a) - (b)
 def LGBM(q, X_train, Y_train, X_valid, Y_valid, X_test):
     # (a) Modeling  
     model = LGBMRegressor(alpha=q)
-    grid = RandomizedSearchCV(model,gridParams,verbose=1,cv=10,n_jobs = -1,n_iter=10000)                   
+    grid = RandomizedSearchCV(model,gridParams,verbose=100,cv=10,n_jobs = -1,n_iter=2000)                   
                          
     grid.fit(X_train, Y_train, eval_metric = ['quantile'], 
-          eval_set=[(X_valid, Y_valid)],verbose=500,)
+          eval_set=[(X_valid, Y_valid)],verbose=500)
 
     # (b) Predictions
     print(grid.best_params_)

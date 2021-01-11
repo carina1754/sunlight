@@ -48,7 +48,7 @@ params = {
     'objective': 'quantile',
     'metric': 'quantile',
     #'max_depth': -1,
-    #'num_leaves': 144,
+    'num_leaves': 1000,
     #'num_iterations' : 1000,
     'learning_rate': 0.01,
     'n_estimators': 10000,
