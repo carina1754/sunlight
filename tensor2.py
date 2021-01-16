@@ -11,26 +11,14 @@ import tensorflow.keras.backend as K
 import tensorflow.keras.layers as L
 import tensorflow.keras.models as M
 
-
-# In[4]:
-
-
 train = pd.read_csv('./data/train/train.csv')
 sub = pd.read_csv('./data/sample_submission.csv')
-
-
-# In[5]:
-
 
 def preprocess_data(data):
 	temp = data.copy()
 	return temp.iloc[-48:, :]
 
 df_test = []
-
-
-# In[8]:
-
 
 for i in range(81):
   file_path = './data/test/' + str(i) + '.csv'
@@ -43,10 +31,6 @@ X_test = pd.concat(df_test)
 X_test = X_test.append(X_test[-96:])
 X_test.shape
 
-
-# In[9]:
-
-
 ##=======================Add Td, T-Td and GHI features
 def Add_features(data):
   c = 243.12
@@ -55,12 +39,8 @@ def Add_features(data):
   dp = ( c * gamma) / (b - gamma)
   data.insert(1,'Td',dp)
   data.insert(1,'T-Td',data['T']-data['Td'])
-  data.insert(1,'GHI',data['DNI']+data['DHI'])
+  data.insert(1,'GHI',data['DHI'] + data['DNI'] * np.cos(((180 * (data['Hour']+1+data['Minute']/60) / 24) - 90)/180*np.pi))
   return data
-
-
-# In[10]:
-
 
 train = Add_features(train)
 X_test = Add_features(X_test)
@@ -85,10 +65,6 @@ train_std  = train_df.std()
 train_df = (train_df - train_mean) / train_std
 val_df   =  (val_df - train_mean) / train_std
 test_df  = (test_df - train_mean) / train_std
-
-
-# In[14]:
-
 
 class WindowGenerator():
   def __init__(self, input_width, label_width, shift,
@@ -120,10 +96,6 @@ class WindowGenerator():
       f'Label indices: {self.label_indices}',
       f'Label column name(s): {self.label_columns}'])
 
-
-# In[16]:
-
-
 def split_window(self, features):
   inputs = features[:, self.input_slice, :]
   labels = features[:, self.labels_slice, :]
@@ -137,10 +109,6 @@ def split_window(self, features):
 
 WindowGenerator.split_window = split_window
 
-
-# In[19]:
-
-
 def make_dataset(self, data,is_train=True):
   data = np.array(data, dtype=np.float32)
   if is_train==True:
@@ -153,10 +121,6 @@ def make_dataset(self, data,is_train=True):
   return ds
 
 WindowGenerator.make_dataset = make_dataset
-
-
-# In[20]:
-
 
 @property
 def train(self):
@@ -187,10 +151,6 @@ WindowGenerator.val = val
 WindowGenerator.test = test
 WindowGenerator.example = example
 
-
-# In[25]:
-
-
 def plot(self, model=None, plot_col='TARGET', max_subplots=3):
   inputs, labels = self.example
   plt.figure(figsize=(12, 8))
@@ -218,36 +178,12 @@ def plot(self, model=None, plot_col='TARGET', max_subplots=3):
 
 WindowGenerator.plot = plot
 
-
-# In[27]:
-
-
 #Set the data-set 24 hours input -> 48 hours output
 w1 = WindowGenerator(input_width=48, label_width=96, shift = 96)
-
-
-# In[28]:
-
-
-w1.plot()
-
-
-# In[29]:
-
-
-w1.train.element_spec
-
-
-# In[31]:
-
 
 for example_inputs, example_labels in w1.train.take(1):
   print(f'Inputs shape (batch, time, features): {example_inputs.shape}')
   print(f'Labels shape (batch, time, features): {example_labels.shape}')
-
-
-# In[32]:
-
 
 ################# Quantile loss definition
 def quantile_loss(q, y_true, y_pred):
@@ -258,15 +194,7 @@ quantiles = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 #########################
 OUT_STEPS = 96
 
-
-# In[33]:
-
-
 early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=2, mode='min')
-
-
-# In[35]:
-
 
 ########## quantile plot definition
 
@@ -300,22 +228,15 @@ def quantile_plot(self, model=None, plot_col='TARGET', max_subplots=3, quantile=
 
 WindowGenerator.quantile_plot = quantile_plot
 
-
-# In[36]:
-
-
 def DenseModel():
   model = tf.keras.Sequential()
   model.add(L.Lambda(lambda x: x[:, -1:, :]))
   model.add(L.Dense(512, activation='relu'))
   model.add(L.Dense(256, activation='relu'))
+  model.add(L.Dense(128, activation='relu'))
   model.add(L.Dense(OUT_STEPS*num_features, kernel_initializer=tf.initializers.zeros))
   model.add(L.Reshape([OUT_STEPS, num_features]))
   return model
-
-
-# In[37]:
-
 
 Dense_actual_pred = pd.DataFrame()
 Dense_val_score = pd.DataFrame()
@@ -330,10 +251,6 @@ for q in quantiles:
 	Dense_val_score[f'{q}'] = model.evaluate(w1.val)
 	w1.quantile_plot(model, quantile=q)
 
-
-# In[47]:
-
-
 Dense_actual_pred.columns = quantiles
 #Denormalizing TARGET values
 Dense_actual_pred_denorm = Dense_actual_pred*train_std['TARGET'] + train_mean['TARGET']
@@ -342,10 +259,6 @@ Dense_actual_pred_nn = np.where(Dense_actual_pred_denorm<0, 0, Dense_actual_pred
 
 sub.iloc[:,1:] = Dense_actual_pred_nn
 sub.to_csv("./data/submission.csv",index=False)
-
-
-# In[42]:
-
 
 ### AutoRegressive LSTM
 class FeedBack(tf.keras.Model):
@@ -360,10 +273,6 @@ class FeedBack(tf.keras.Model):
 
 feedback_model = FeedBack(units=32, out_steps=OUT_STEPS)
 
-
-# In[43]:
-
-
 def warmup(self, inputs):
   # inputs.shape => (batch, time, features)
   # x.shape => (batch, lstm_units)
@@ -374,16 +283,8 @@ def warmup(self, inputs):
 
 FeedBack.warmup = warmup
 
-
-# In[44]:
-
-
 prediction, state = feedback_model.warmup(w1.example[0])
 prediction.shape
-
-
-# In[45]:
-
 
 def call(self, inputs, training=None):
   # Use a TensorArray to capture dynamically unrolled outputs.
@@ -411,10 +312,6 @@ def call(self, inputs, training=None):
 
 FeedBack.call = call
 
-
-# In[ ]:
-
-
 AR_Lstm_actual_pred = pd.DataFrame()
 AR_Lstm_val_score = pd.DataFrame()
 
@@ -428,23 +325,10 @@ for q in quantiles:
         AR_Lstm_val_score[f'{q}'] = model.evaluate(w1.val)
         w1.quantile_plot(model, quantile=q)
 
-
-# In[ ]:
-
-
 AR_Lstm_actual_pred.columns = quantiles
-
-
-# In[ ]:
-
 
 AR_Lstm_actual_pred_denorm = AR_Lstm_actual_pred*train_std['TARGET'] + train_mean['TARGET']
 AR_Lstm_actual_pred_nn = np.where(AR_Lstm_actual_pred_denorm<0, 0, AR_Lstm_actual_pred_denorm)
 
-
-# In[ ]:
-
-
 sub.iloc[:,1:] = AR_Lstm_actual_pred_nn
-sub.to_csv(".data/submission.csv",index=False)
-
+sub.to_csv("./data/submission.csv",index=False)
