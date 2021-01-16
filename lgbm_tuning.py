@@ -55,6 +55,7 @@ gridParams = {
     'metric':['quantile'],
     'scale_pos_weight' : [1],
     'n_estimators': [10000],
+    'device':['./gpu:0']
     }
 # Get the model and the predictions in (a) - (b)
 def LGBM(q, X_train, Y_train, X_valid, Y_valid, X_test):
