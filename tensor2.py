@@ -233,7 +233,6 @@ def DenseModel():
   model.add(L.Lambda(lambda x: x[:, -1:, :]))
   model.add(L.Dense(512, activation='relu'))
   model.add(L.Dense(256, activation='relu'))
-  model.add(L.Dense(128, activation='relu'))
   model.add(L.Dense(OUT_STEPS*num_features, kernel_initializer=tf.initializers.zeros))
   model.add(L.Reshape([OUT_STEPS, num_features]))
   return model
@@ -316,6 +315,7 @@ AR_Lstm_actual_pred = pd.DataFrame()
 AR_Lstm_val_score = pd.DataFrame()
 
 for q in quantiles:
+        print(q)
         model = feedback_model
         model.compile(loss = lambda y_true, y_pred: quantile_loss(q, y_true, y_pred), optimizer='adam', metrics=[lambda y, pred: quantile_loss(q, y, pred)])
         history = model.fit(w1.train, validation_data=w1.val, epochs=20, callbacks=[early_stopping])
