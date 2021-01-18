@@ -7,8 +7,8 @@ import math
 import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
-train = pd.read_csv('/Users/jungsuuann/Downloads/data/train/train.csv')
-submission = pd.read_csv('/Users/jungsuuann/Downloads/data/sample_submission.csv')
+train = pd.read_csv('./data/train/train.csv')
+submission = pd.read_csv('./data/sample_submission.csv')
 print(np.tan(0.5))
 def preprocess_data(data, is_train=True):
     temp = data.copy()
@@ -29,7 +29,7 @@ df_train = preprocess_data(train)
 
 X_test = df_train
 plt.figure(1)
-plt.scatter(X_test[['']], X_test[['']])
+plt.scatter(X_test[['TIME']], X_test[['TARGET']],alpha=0.05)
 plt.figure(2)
-plt.scatter(X_test[['TARGET']], X_test[['GHI']])
+plt.scatter(X_test[['TARGET']], X_test[['GHI']],alpha=0.05)
 plt.show()
