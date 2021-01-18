@@ -37,6 +37,7 @@ def Add_features(data):
   b = 17.62
   gamma = (b * (data['T']) / (c + (data['T']))) + np.log(data['RH'] / 100)
   dp = ( c * gamma) / (b - gamma)
+  data.insert(1,'Time',data['Hour']+1+data['Minute']/60)
   data.insert(1,'Td',dp)
   data.insert(1,'T-Td',data['T']-data['Td'])
   data.insert(1,'GHI',data['DHI'] + data['DNI'] * np.cos(((180 * (data['Hour']+1+data['Minute']/60) / 24) - 90)/180*np.pi))
@@ -45,8 +46,8 @@ def Add_features(data):
 train = Add_features(train)
 X_test = Add_features(X_test)
 
-df_train = train.drop(['Day','Minute'],axis=1)
-df_test  = X_test.drop(['Day','Minute'],axis=1)
+df_train = train.drop(['Day','Hour','Minute'],axis=1)
+df_test  = X_test.drop(['Day','Hour','Minute'],axis=1)
 
 column_indices = {name: i for i, name in enumerate(df_train.columns)}
 
@@ -172,10 +173,9 @@ def plot(self, model=None, plot_col='TARGET', max_subplots=3):
     if model is not None:
       predictions = model(inputs)
       plt.scatter(self.label_indices, predictions[n, :, label_col_index], marker='X', edgecolors='k', label='Predictions',  c='#ff7f0e', s=64)
-  if n == 0:
-    plt.legend()
+    if n == 0:
+      plt.legend()
   plt.xlabel('Time [30m]')
-
 WindowGenerator.plot = plot
 
 #Set the data-set 24 hours input -> 48 hours output
@@ -225,7 +225,6 @@ def quantile_plot(self, model=None, plot_col='TARGET', max_subplots=3, quantile=
     if quantile == 0.9 and n==0:
       plt.legend()
   plt.xlabel('Time [30m]')
-
 WindowGenerator.quantile_plot = quantile_plot
 
 def DenseModel():
@@ -315,7 +314,6 @@ AR_Lstm_actual_pred = pd.DataFrame()
 AR_Lstm_val_score = pd.DataFrame()
 
 for q in quantiles:
-        print(q)
         model = feedback_model
         model.compile(loss = lambda y_true, y_pred: quantile_loss(q, y_true, y_pred), optimizer='adam', metrics=[lambda y, pred: quantile_loss(q, y, pred)])
         history = model.fit(w1.train, validation_data=w1.val, epochs=20, callbacks=[early_stopping])
@@ -324,7 +322,6 @@ for q in quantiles:
         AR_Lstm_actual_pred = pd.concat([AR_Lstm_actual_pred,target_pred],axis=1)
         AR_Lstm_val_score[f'{q}'] = model.evaluate(w1.val)
         w1.quantile_plot(model, quantile=q)
-
 AR_Lstm_actual_pred.columns = quantiles
 
 AR_Lstm_actual_pred_denorm = AR_Lstm_actual_pred*train_std['TARGET'] + train_mean['TARGET']

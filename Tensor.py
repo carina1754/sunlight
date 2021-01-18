@@ -55,14 +55,14 @@ from keras.layers import Dense
 
 def training(q, X_train, Y_train,X_valid,Y_valid, X_test):
     model = Sequential([
-    Dense(10, activation='relu'), 
-    Dense(10, activation='relu'),
-    Dense(5, activation='relu'),
+    Dense(512, activation='relu'), 
+    Dense(128, activation='relu'),
+    Dense(64, activation='relu'),
     Dense(1, activation='softmax')
     ])
     
     # 3. 훈련
-    model.compile(loss=lambda y,pred: quantile_loss(q,y,pred),optimizer='adam')
+    model.compile(loss=lambda y,pred: quantile_loss(q,y,pred),optimizer='adam',metrics=[lambda y, pred: quantile_loss(q, y, pred)])
     model.fit(X_train,Y_train, epochs=10,validation_data=(X_valid, Y_valid))
     pred = pd.Series(np.ravel(model.predict(X_test), order='C'))
     return pred, model
