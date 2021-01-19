@@ -55,7 +55,6 @@ gridParams = {
     'metric':['quantile'],
     'scale_pos_weight' : [1],
     'n_estimators': [10000],
-    'device':['./gpu:0']
     }
 # Get the model and the predictions in (a) - (b)
 def LGBM(q, X_train, Y_train, X_valid, Y_valid, X_test):
@@ -63,8 +62,7 @@ def LGBM(q, X_train, Y_train, X_valid, Y_valid, X_test):
     model = LGBMRegressor(alpha=q)
     grid = RandomizedSearchCV(model,gridParams,verbose=1,cv=10,n_jobs = -1,n_iter=10)                   
                          
-    grid.fit(X_train, Y_train, eval_metric = ['quantile'], 
-          eval_set=[(X_valid, Y_valid)],verbose=500)
+    grid.fit(X_train, Y_train, eval_metric = ['quantile'],eval_set=[(X_valid, Y_valid)],verbose=500)
 
     # (b) Predictions
     print(grid.best_params_)
