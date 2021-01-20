@@ -37,8 +37,8 @@ for i in range(81):
 X_test = pd.concat(test)
 
 from sklearn.model_selection import RandomizedSearchCV, train_test_split
-X_train_1, X_valid_1, Y_train_1, Y_valid_1 = train_test_split(df_train.iloc[:, :-2], df_train.iloc[:, -2], test_size=0.3, random_state=0)
-X_train_2, X_valid_2, Y_train_2, Y_valid_2 = train_test_split(df_train.iloc[:, :-2], df_train.iloc[:, -1], test_size=0.3, random_state=0)
+X_train_1, X_valid_1, Y_train_1, Y_valid_1 = train_test_split(df_train.iloc[:, :-2], df_train.iloc[:, -2], test_size=0.2, random_state=0)
+X_train_2, X_valid_2, Y_train_2, Y_valid_2 = train_test_split(df_train.iloc[:, :-2], df_train.iloc[:, -1], test_size=0.2, random_state=0)
 
 quantiles = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
@@ -50,11 +50,12 @@ gridParams = {
     'boosting_type' : ['gbdt'],
     'objective' : ['quantile'],
     'max_depth' : [-1], 
-    'subsample' : [0.5],
+    'subsample' : [0.8],
     'min_split_gain' : [0.01,0.05,0.027],
     'metric':['quantile'],
     'scale_pos_weight' : [1],
     'n_estimators': [10000],
+    'bagging_fraction':[0.8]
     }
 # Get the model and the predictions in (a) - (b)
 def LGBM(q, X_train, Y_train, X_valid, Y_valid, X_test):
