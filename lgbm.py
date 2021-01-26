@@ -4,7 +4,7 @@ import os
 import glob
 import random
 import math
-
+import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
 train = pd.read_csv('./data/train/train.csv')
@@ -61,12 +61,18 @@ def LGBM(q, X_train, Y_train, X_valid, Y_valid, X_test):
     # (a) Modeling  
     model = LGBMRegressor(alpha=q, bagging_fraction=0.7, subsample=0.7,**params)                   
                          
-    model.fit(X_train, Y_train, eval_metric = ['quantile'], 
+    history = model.fit(X_train, Y_train, eval_metric = ['quantile'], 
           eval_set=[(X_valid, Y_valid)], early_stopping_rounds=300,verbose=300)
 
     # (b) Predictions
     print (np.shape(model.predict(X_test)))
     pred = pd.Series(model.predict(X_test).round(2))
+    fig, ax = plt.subplots()
+    ax.plot(history.history['loss'], 'b', label = 'loss')
+    ax.plot(history.history['val_loss'], 'r', label='val_loss')
+    ax.set_xlabel('epoch')
+    ax.set_ylabel('loss')
+    ax.legend(loc='upper left')
     return pred, model
 
 def train_data(X_train, Y_train, X_valid, Y_valid, X_test):
