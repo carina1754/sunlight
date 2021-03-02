@@ -37,11 +37,11 @@ for i in range(81):
 X_test = pd.concat(test)
 
 from sklearn.model_selection import train_test_split
-x_train_1, x_test_1, y_train_1, y_test_1 = train_test_split(df_train.iloc[:, :-2], df_train.iloc[:, -2], test_size=0.3, random_state=0)
-x_test_1,x_valid_1,y_test_1,y_valid_1 = train_test_split(x_test_1, y_test_1, test_size=0.5, random_state=0)
+x_train_1, x_test_1, y_train_1, y_test_1 = train_test_split(df_train.iloc[:, :-2], df_train.iloc[:, -2], test_size=0.2, random_state=0)
+x_test_1,x_valid_1,y_test_1,y_valid_1 = train_test_split(x_test_1, y_test_1, test_size=0.2, random_state=0)
 
-x_train_2, x_test_2, y_train_2, y_test_2 = train_test_split(df_train.iloc[:, :-2], df_train.iloc[:, -1], test_size=0.3, random_state=0)
-x_test_2,x_valid_2,y_test_2,y_valid_2 = train_test_split(x_test_2, y_test_2, test_size=0.5, random_state=0)
+x_train_2, x_test_2, y_train_2, y_test_2 = train_test_split(df_train.iloc[:, :-2], df_train.iloc[:, -1], test_size=0.2, random_state=0)
+x_test_2,x_valid_2,y_test_2,y_valid_2 = train_test_split(x_test_2, y_test_2, test_size=0.2, random_state=0)
 
 from tensorflow.keras.backend import mean, maximum
 
@@ -52,18 +52,18 @@ def quantile_loss(q, y, pred):
 # 2. 모델 구성
 from keras.models import Sequential
 from keras.layers import Dense
-
+from keras.layers import Dropout
 def training(q, X_train, Y_train,X_valid,Y_valid, X_test):
-    model = Sequential([
-    Dense(512, activation='relu'), 
-    Dense(128, activation='relu'),
-    Dense(64, activation='relu'),
-    Dense(1, activation='softmax')
-    ])
+    model = Sequential()
+    model.add(Dense(256, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(128, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(61, activation='softmax'))
     
     # 3. 훈련
     model.compile(loss=lambda y,pred: quantile_loss(q,y,pred),optimizer='adam',metrics=[lambda y, pred: quantile_loss(q, y, pred)])
-    model.fit(X_train,Y_train, epochs=10,validation_data=(X_valid, Y_valid))
+    model.fit(X_train,Y_train, epochs=5,validation_data=(X_valid, Y_valid))
     pred = pd.Series(np.ravel(model.predict(X_test), order='C'))
     return pred, model
 
