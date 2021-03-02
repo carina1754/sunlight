@@ -14,6 +14,7 @@ def preprocess_data(data, is_train=True):
     
     temp = data.copy()
     temp = temp[['Hour', 'Minute','TARGET', 'DHI','DNI','WS', 'RH', 'T']]
+    print(temp)
     temp = temp.assign(GHI=lambda x: x['DHI'] + x['DNI'] * np.cos(((180 * (x['Hour']+1+x['Minute']/60) / 24) - 90)/180*np.pi))
     temp = temp[['Hour', 'TARGET','GHI','DHI','DNI','RH','T','WS']]
     
