@@ -14,6 +14,7 @@ def preprocess_data(data, is_train=True):
     
     temp = data.copy()
     temp = temp[['Hour', 'Minute','TARGET', 'DHI','DNI','WS', 'RH', 'T']]
+    print(temp)
     temp = temp.assign(GHI=lambda x: x['DHI'] + x['DNI'] * np.cos(((180 * (x['Hour']+1+x['Minute']/60) / 24) - 90)/180*np.pi))
     temp = temp[['Hour', 'TARGET','GHI','DHI','DNI','RH','T','WS']]
     
@@ -37,8 +38,8 @@ for i in range(81):
 X_test = pd.concat(test)
 
 from sklearn.model_selection import train_test_split
-X_train_1, X_valid_1, Y_train_1, Y_valid_1 = train_test_split(df_train.iloc[:, :-2], df_train.iloc[:, -2], test_size=0.3, random_state=0)
-X_train_2, X_valid_2, Y_train_2, Y_valid_2 = train_test_split(df_train.iloc[:, :-2], df_train.iloc[:, -1], test_size=0.3, random_state=0)
+X_train_1, X_valid_1, Y_train_1, Y_valid_1 = train_test_split(df_train.iloc[:, :-2], df_train.iloc[:, -2], test_size=0.2, random_state=0)
+X_train_2, X_valid_2, Y_train_2, Y_valid_2 = train_test_split(df_train.iloc[:, :-2], df_train.iloc[:, -1], test_size=0.2, random_state=0)
 
 quantiles = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
@@ -50,7 +51,7 @@ params = {
     #'max_depth': -1,
     'num_leaves': 1000,
     #'num_iterations' : 1000,
-    'learning_rate': 0.01,
+    'learning_rate': 0.05,
     'n_estimators': 10000,
     #'min_data_in_leaf':600,
     'boosting_type': 'gbdt'
@@ -59,10 +60,15 @@ params = {
 # Get the model and the predictions in (a) - (b)
 def LGBM(q, X_train, Y_train, X_valid, Y_valid, X_test):
     # (a) Modeling  
-    model = LGBMRegressor(alpha=q, bagging_fraction=0.7, subsample=0.7,**params)                   
+    model = LGBMRegressor(alpha=q, bagging_fraction=0.8, subsample=0.8,**params)                   
                          
+<<<<<<< HEAD
+    model.fit(X_train, Y_train, eval_metric = ['quantile'], 
+          eval_set=[(X_valid, Y_valid)], early_stopping_rounds=300,verbose=1000)
+=======
     history = model.fit(X_train, Y_train, eval_metric = ['quantile'], 
           eval_set=[(X_valid, Y_valid)], early_stopping_rounds=300,verbose=300)
+>>>>>>> d7cbaa3f5ac733ae7a4bb42fde4fd66d53517efe
 
     # (b) Predictions
     print (np.shape(model.predict(X_test)))
